@@ -1,18 +1,20 @@
 package user
 
-var (
-    ADMIN = Role("ADMIN")
-    USER  = Role("USER")
+import (
+    "web-example/types"
+    "web-example/validator"
 )
 
-type Role string
-
 type User struct {
-    ID       int    `json:"id" gorm:"primaryKey,autoIncrement"`
-    UserName string `json:"user_name" gorm:"unique;not null;type:varchar(255)"`
-    Role     Role   `json:"role" gorm:"not null;type:varchar(100)"`
+    id       int        `gorm:"primaryKey,autoIncrement"`
+    UserName string     `json:"user_name" gorm:"unique;not null;type:varchar(255)" validate:"required;min=4,max=255"`
+    Role     types.Role `json:"role" gorm:"not null;type:varchar(100)" validate:"required;oneOfRole=ADMIN,USER"`
 }
 
 func (User) TableName() string {
     return "users"
+}
+
+func (u *User) Validate() error {
+    return validator.Validate(u)
 }
