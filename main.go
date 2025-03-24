@@ -4,12 +4,12 @@ import (
 	"log"
 	"time"
 	"web-example/database"
+	"web-example/order"
 	"web-example/product"
 	"web-example/user"
 	"web-example/web"
 )
 
-// https://github.com/sikozonpc/ecom
 func main() {
 	dsn := "host=localhost user=postgres password=postgres dbname=test port=5433 sslmode=disable"
 	db, err := database.Connect(dsn, &database.Options{
@@ -22,11 +22,10 @@ func main() {
 	}
 	log.Println("Successfully connected to database")
 
-	err = db.AutoMigrate(&user.User{}, &product.Product{})
+	err = db.AutoMigrate(&user.User{}, &product.Product{}, &order.Order{})
 	if err != nil {
-		log.Fatalf("Failed to migrate user: %v", err)
+		log.Fatalf("Failed to migrate schema: %v", err)
 	}
-	log.Println("Successfully migrated users table")
 
 	server := web.NewApiServer(8080, db)
 	server.Listen()
