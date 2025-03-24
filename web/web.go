@@ -5,6 +5,7 @@ import (
     "gorm.io/gorm"
     "log"
     "net/http"
+    "web-example/product"
     "web-example/user"
 )
 
@@ -23,17 +24,24 @@ func (s *Server) Listen() {
     userStore := user.NewStore(s.db)
     userHandler := user.NewHandler(userStore)
 
-    userMux := http.NewServeMux()
-    userMux.HandleFunc("GET /users", userHandler.ListAll)
-    userMux.HandleFunc("POST /user", userHandler.Create)
-    userMux.HandleFunc("GET /user/{userName}", userHandler.Get)
+    productStore := product.NewStore(s.db)
+    productHandler := product.NewHandler(productStore)
+
+    v1Mux := http.NewServeMux()
+    v1Mux.HandleFunc("GET /users", userHandler.ListAll)
+    v1Mux.HandleFunc("POST /user", userHandler.Create)
+    v1Mux.HandleFunc("GET /user/{userName}", userHandler.Get)
+
+    v1Mux.HandleFunc("GET /products", productHandler.ListAll)
+    v1Mux.HandleFunc("POST /product", productHandler.Create)
+    v1Mux.HandleFunc("GET /product/{name}", productHandler.Get)
 
     userMiddleware := CreateMiddleware(AuthenticationMiddleware)
-    wrappedUserMux := userMiddleware(userStore, http.StripPrefix("/v1", userMux))
+    wrappedUserMux := userMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))
 
     mainMux := http.NewServeMux()
     mainMux.HandleFunc("GET /info", Info)
-    mainMux.Handle("/v1/", wrappedUserMux)
+    mainMux.Handle("/api/v1/", wrappedUserMux)
 
     mainMiddleware := CreateMiddleware(MeasureMiddleware)
     wrappedMainMux := mainMiddleware(nil, mainMux)

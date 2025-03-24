@@ -1,8 +1,12 @@
 package user
 
 import (
+    "errors"
+    "github.com/jackc/pgx/v5/pgconn"
     "gorm.io/gorm"
     "log"
+    "web-example/types"
+    "web-example/util"
 )
 
 type Store struct {
@@ -10,7 +14,9 @@ type Store struct {
 }
 
 func NewStore(db *gorm.DB) *Store {
-    return &Store{db}
+    store := &Store{db}
+    store.init()
+    return store
 }
 
 func (s *Store) ListAll() ([]*User, error) {
@@ -41,4 +47,25 @@ func (s *Store) FindByUsername(username string) (*User, error) {
     }
     log.Printf("Found user: %v", user)
     return &user, nil
+}
+
+func (s *Store) init() {
+    err := s.Create(&User{
+        UserName: "admin",
+        Password: util.HashPassword("admin"),
+        Role:     types.ADMIN,
+    })
+    if err == nil {
+        return
+    }
+    var pgErr *pgconn.PgError
+    if errors.As(err, &pgErr) {
+        if pgErr.Code == "23505" {
+            log.Printf("Admin user already exists")
+        } else {
+            log.Println(err)
+        }
+    } else {
+        log.Printf("Cannot create admin user: %v", err)
+    }
 }

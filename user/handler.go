@@ -3,10 +3,8 @@ package user
 import (
     "encoding/json"
     "errors"
-    "github.com/jackc/pgx/v5/pgconn"
     "log"
     "net/http"
-    "web-example/types"
     "web-example/util"
 )
 
@@ -21,7 +19,6 @@ type Handler struct {
 }
 
 func NewHandler(store Repository) *Handler {
-    initAdminUser(store)
     return &Handler{store: store}
 }
 
@@ -73,26 +70,4 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
     }
 
     util.WriteJSON(w, http.StatusOK, user.ToReponse())
-
-}
-
-func initAdminUser(store Repository) {
-    err := store.Create(&User{
-        UserName: "admin",
-        Password: util.HashPassword("admin"),
-        Role:     types.ADMIN,
-    })
-    if err == nil {
-        return
-    }
-    var pgErr *pgconn.PgError
-    if errors.As(err, &pgErr) {
-        if pgErr.Code == "23505" {
-            log.Printf("Admin user already exists")
-        } else {
-            log.Println(err)
-        }
-    } else {
-        log.Printf("Cannot create admin user: %v", err)
-    }
 }
