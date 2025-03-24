@@ -12,10 +12,10 @@ import (
     "web-example/util"
 )
 
-type Middleware func(user.UserRepository, http.Handler) http.Handler
+type Middleware func(user.Repository, http.Handler) http.Handler
 
-func CreateStack(middlewares ...Middleware) Middleware {
-    return func(userRepo user.UserRepository, next http.Handler) http.Handler {
+func CreateMiddleware(middlewares ...Middleware) Middleware {
+    return func(userRepo user.Repository, next http.Handler) http.Handler {
         for i := len(middlewares) - 1; i >= 0; i-- {
             next = middlewares[i](userRepo, next)
         }
@@ -23,7 +23,7 @@ func CreateStack(middlewares ...Middleware) Middleware {
     }
 }
 
-func AuthenticationMiddleware(userRepo user.UserRepository, next http.Handler) http.Handler {
+func AuthenticationMiddleware(userRepo user.Repository, next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         log.Println("Checking authentication")
 
@@ -72,7 +72,7 @@ func AuthenticationMiddleware(userRepo user.UserRepository, next http.Handler) h
     })
 }
 
-func MeasureMiddleware(_ user.UserRepository, next http.Handler) http.Handler {
+func MeasureMiddleware(_ user.Repository, next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         startTime := time.Now()
         next.ServeHTTP(w, r)

@@ -5,15 +5,15 @@ import (
     "log"
 )
 
-type UserStore struct {
+type Store struct {
     db *gorm.DB
 }
 
-func NewUserStore(db *gorm.DB) *UserStore {
-    return &UserStore{db}
+func NewStore(db *gorm.DB) *Store {
+    return &Store{db}
 }
 
-func (s *UserStore) ListAll() ([]*User, error) {
+func (s *Store) ListAll() ([]*User, error) {
     log.Printf("Listing users")
     var users []*User
     result := s.db.Find(&users)
@@ -23,7 +23,7 @@ func (s *UserStore) ListAll() ([]*User, error) {
     return users, nil
 }
 
-func (s *UserStore) Create(user *User) error {
+func (s *Store) Create(user *User) error {
     log.Printf("Creating user: %v", *user)
     result := s.db.Create(&user)
     if result.Error != nil {
@@ -32,7 +32,7 @@ func (s *UserStore) Create(user *User) error {
     return nil
 }
 
-func (s *UserStore) FindByUsername(username string) (*User, error) {
+func (s *Store) FindByUsername(username string) (*User, error) {
     log.Printf("Finding user by username: %v", username)
     var user User
     result := s.db.Where("user_name = ?", username).First(&user)

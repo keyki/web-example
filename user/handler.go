@@ -10,23 +10,29 @@ import (
     "web-example/util"
 )
 
-type UserHandler struct {
-    store UserRepository
+type Repository interface {
+    ListAll() ([]*User, error)
+    Create(user *User) error
+    FindByUsername(username string) (*User, error)
 }
 
-func NewUserHandler(store UserRepository) *UserHandler {
+type Handler struct {
+    store Repository
+}
+
+func NewHandler(store Repository) *Handler {
     initAdminUser(store)
-    return &UserHandler{store: store}
+    return &Handler{store: store}
 }
 
-func convertToUserResponse(users []*User) (r []*UserResponse) {
+func convertToUserResponse(users []*User) (r []*Response) {
     for _, u := range users {
         r = append(r, u.ToReponse())
     }
     return r
 }
 
-func (h *UserHandler) ListAll(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
     users, err := h.store.ListAll()
     if err != nil {
         util.WriteError(w, http.StatusInternalServerError, err)
@@ -34,8 +40,8 @@ func (h *UserHandler) ListAll(w http.ResponseWriter, r *http.Request) {
     util.WriteJSON(w, http.StatusOK, convertToUserResponse(users))
 }
 
-func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
-    var userRequest UserRequest
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+    var userRequest Request
     if err := json.NewDecoder(r.Body).Decode(&userRequest); err != nil {
         util.WriteError(w, http.StatusBadRequest, err)
         return
@@ -51,7 +57,26 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
     }
 }
 
-func initAdminUser(store UserRepository) {
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+    userName := r.PathValue("userName")
+    log.Printf("Find user %s\n", userName)
+    if userName == "" {
+        util.WriteError(w, http.StatusBadRequest, errors.New("UserName is required"))
+        return
+    }
+
+    user, err := h.store.FindByUsername(userName)
+    if err != nil {
+        log.Printf("Find error: %v", err)
+        util.WriteJSON(w, http.StatusNotFound, []*Response{})
+        return
+    }
+
+    util.WriteJSON(w, http.StatusOK, user.ToReponse())
+
+}
+
+func initAdminUser(store Repository) {
     err := store.Create(&User{
         UserName: "admin",
         Password: util.HashPassword("admin"),

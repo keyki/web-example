@@ -2,7 +2,7 @@ package user
 
 import "web-example/types"
 
-type UserResponse struct {
+type Response struct {
     UserName string     `json:"user_name"`
     Role     types.Role `json:"role"`
 }

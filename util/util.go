@@ -9,7 +9,11 @@ import (
 )
 
 func WriteJSON(w http.ResponseWriter, status int, v any) {
-    if err := writeJSON(w, 200, v); err != nil {
+    code := 200
+    if status != 0 {
+        code = status
+    }
+    if err := writeJSON(w, code, v); err != nil {
         log.Printf("WriteJSON Error: %v", err)
         WriteError(w, http.StatusInternalServerError, err)
     }
