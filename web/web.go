@@ -5,7 +5,6 @@ import (
     "gorm.io/gorm"
     "log"
     "net/http"
-    "web-example/types"
     "web-example/user"
 )
 
@@ -24,16 +23,21 @@ func (s *Server) Listen() {
     userStore := user.NewUserStore(s.db)
     userHandler := user.NewUserHandler(userStore)
 
-    mux := http.NewServeMux()
-    mux.HandleFunc("GET /info", Info)
-    mux.HandleFunc("GET /users", Authenticator(userHandler.ListAll, userStore, types.USER))
-    mux.HandleFunc("POST /user", Authenticator(userHandler.Create, userStore, types.ADMIN))
+    userMux := http.NewServeMux()
+    userMux.HandleFunc("GET /users", userHandler.ListAll)
+    userMux.HandleFunc("POST /user", userHandler.Create)
 
-    middleware := CreateStack(
-        MeasureMiddleware,
-    )
+    userMiddlewareStack := CreateStack(AuthenticationMiddleware)
+    wrappedUserMux := userMiddlewareStack(userStore, http.StripPrefix("/v1", userMux))
 
-    err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), middleware(mux))
+    mainMux := http.NewServeMux()
+    mainMux.HandleFunc("GET /info", Info)
+    mainMux.Handle("/v1/", wrappedUserMux)
+
+    mainMiddlewareStack := CreateStack(MeasureMiddleware)
+    wrappedMainMux := mainMiddlewareStack(nil, mainMux)
+
+    err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), wrappedMainMux)
     if err != nil {
         log.Fatalf("Failed to listen on port %d: %v", s.port, err)
     }
