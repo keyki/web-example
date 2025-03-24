@@ -16,3 +16,13 @@ type Product struct {
     Currency    Currency `gorm:"not null;type:varchar(5);default:HUF"`
     Quantity    int      `json:"quantity"`
 }
+
+func (p *Product) ToResponse() *Response {
+    return &Response{
+        Name:        p.Name,
+        Description: p.Description,
+        Price:       p.Price,
+        Currency:    p.Currency,
+        Quantity:    p.Quantity,
+    }
+}

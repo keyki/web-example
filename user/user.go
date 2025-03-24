@@ -12,7 +12,7 @@ type User struct {
     Role     types.Role `gorm:"not null;type:varchar(100)"`
 }
 
-func (u *User) ToReponse() *Response {
+func (u *User) ToResponse() *Response {
     return &Response{
         UserName: u.UserName,
         Role:     u.Role,

@@ -27,20 +27,20 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         util.WriteError(w, http.StatusInternalServerError, err)
     }
-    util.WriteJSON(w, http.StatusOK, products)
+    util.WriteJSON(w, http.StatusOK, convertToResponse(products))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-    var productRequest Product
+    var productRequest Request
     if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
         util.WriteError(w, http.StatusBadRequest, err)
         return
     }
-    //if err := productRequest.Validate(); err != nil {
-    //    util.WriteError(w, http.StatusBadRequest, err)
-    //    return
-    //}
-    if err := h.store.Create(&productRequest); err != nil {
+    if err := productRequest.Validate(); err != nil {
+        util.WriteError(w, http.StatusBadRequest, err)
+        return
+    }
+    if err := h.store.Create(productRequest.ToProduct()); err != nil {
         util.WriteError(w, http.StatusInternalServerError, err)
         log.Printf("Create Error: %v", err)
     }
@@ -57,10 +57,16 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
     product, err := h.store.FindByName(name)
     if err != nil {
         log.Printf("Find error: %v", err)
-        util.WriteJSON(w, http.StatusNotFound, []*Product{})
+        util.WriteJSON(w, http.StatusNotFound, []*Response{})
         return
     }
 
-    util.WriteJSON(w, http.StatusOK, product)
+    util.WriteJSON(w, http.StatusOK, product.ToResponse())
+}
 
+func convertToResponse(products []*Product) (r []*Response) {
+    for _, p := range products {
+        r = append(r, p.ToResponse())
+    }
+    return r
 }

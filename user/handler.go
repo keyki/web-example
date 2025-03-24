@@ -24,7 +24,7 @@ func NewHandler(store Repository) *Handler {
 
 func convertToUserResponse(users []*User) (r []*Response) {
     for _, u := range users {
-        r = append(r, u.ToReponse())
+        r = append(r, u.ToResponse())
     }
     return r
 }
@@ -69,5 +69,5 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    util.WriteJSON(w, http.StatusOK, user.ToReponse())
+    util.WriteJSON(w, http.StatusOK, user.ToResponse())
 }
