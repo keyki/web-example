@@ -32,8 +32,19 @@ func (s *Store) ListAll() ([]*User, error) {
 func (s *Store) Create(user *User) error {
     log.Printf("Creating user: %v", *user)
     result := s.db.Create(&user)
-    if result.Error != nil {
-        return result.Error
+    err := result.Error
+    if err != nil {
+        var pgErr *pgconn.PgError
+        if errors.As(err, &pgErr) {
+            if pgErr.Code == "23505" {
+                log.Printf("User '%s' already exists", user.UserName)
+            } else {
+                log.Println(pgErr)
+            }
+        } else {
+            log.Printf("Cannot create user: %v", err)
+        }
+        return err
     }
     return nil
 }
@@ -50,22 +61,9 @@ func (s *Store) FindByUsername(username string) (*User, error) {
 }
 
 func (s *Store) init() {
-    err := s.Create(&User{
+    s.Create(&User{
         UserName: "admin",
         Password: util.HashPassword("admin"),
         Role:     types.ADMIN,
     })
-    if err == nil {
-        return
-    }
-    var pgErr *pgconn.PgError
-    if errors.As(err, &pgErr) {
-        if pgErr.Code == "23505" {
-            log.Printf("Admin user already exists")
-        } else {
-            log.Println(err)
-        }
-    } else {
-        log.Printf("Cannot create admin user: %v", err)
-    }
 }

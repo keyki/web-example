@@ -30,8 +30,19 @@ func (s *Store) ListAll() ([]*Product, error) {
 func (s *Store) Create(product *Product) error {
     log.Printf("Creating product: %v", *product)
     result := s.db.Create(&product)
-    if result.Error != nil {
-        return result.Error
+    err := result.Error
+    if err != nil {
+        var pgErr *pgconn.PgError
+        if errors.As(err, &pgErr) {
+            if pgErr.Code == "23505" {
+                log.Printf("Product '%s' already exists", product.Name)
+            } else {
+                log.Println(pgErr)
+            }
+        } else {
+            log.Printf("Cannot create product: %v", err)
+        }
+        return err
     }
     return nil
 }
@@ -48,24 +59,18 @@ func (s *Store) FindByName(name string) (*Product, error) {
 }
 
 func (s *Store) init() {
-    err := s.Create(&Product{
-        Name:        "Pen",
+    s.Create(&Product{
+        Name:        "pen",
         Description: "Blue pen",
         Price:       100,
         Currency:    HUF,
         Quantity:    50,
     })
-    if err == nil {
-        return
-    }
-    var pgErr *pgconn.PgError
-    if errors.As(err, &pgErr) {
-        if pgErr.Code == "23505" {
-            log.Printf("Product already exists")
-        } else {
-            log.Println(err)
-        }
-    } else {
-        log.Printf("Cannot create product: %v", err)
-    }
+    s.Create(&Product{
+        Name:        "book",
+        Description: "Harry Potter 1",
+        Price:       5500,
+        Currency:    HUF,
+        Quantity:    12,
+    })
 }
