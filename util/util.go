@@ -2,6 +2,7 @@ package util
 
 import (
     "encoding/json"
+    "golang.org/x/crypto/bcrypt"
     "log"
     "net/http"
     "web-example/types"
@@ -15,9 +16,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func WriteError(w http.ResponseWriter, status int, err error) {
-    if err := writeJSON(w, status, map[string]string{"error": err.Error()}); err != nil {
-        log.Printf("WriteError Error: %v", err)
-    }
+    http.Error(w, err.Error(), status)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) error {
@@ -34,4 +33,14 @@ func IsValidRole(role string) bool {
         }
     }
     return valid
+}
+
+func HashPassword(password string) string {
+    hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+    return string(hashedPassword)
+}
+
+func CheckPassword(hashedPassword, password string) bool {
+    err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+    return err == nil
 }

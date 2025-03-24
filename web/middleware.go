@@ -17,14 +17,14 @@ func CreateStack(middlewares ...Middleware) Middleware {
     }
 }
 
-func Authentication(next http.Handler) http.Handler {
+func AuthenticationMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         log.Println("Check for authentication")
         next.ServeHTTP(w, r)
     })
 }
 
-func Measure(next http.Handler) http.Handler {
+func MeasureMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         startTime := time.Now()
         next.ServeHTTP(w, r)

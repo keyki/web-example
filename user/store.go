@@ -31,3 +31,14 @@ func (s *UserStore) Create(user *User) error {
     }
     return nil
 }
+
+func (s *UserStore) FindByUsername(username string) (*User, error) {
+    log.Printf("Finding user by username: %v", username)
+    var user User
+    result := s.db.Where("user_name = ?", username).First(&user)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    log.Printf("Found user: %v", user)
+    return &user, nil
+}

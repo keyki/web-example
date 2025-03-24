@@ -14,6 +14,13 @@ type UserHandler struct {
     store UserRepository
 }
 
+func convertUser(users []*User) (r []*UserResponse) {
+    for _, u := range users {
+        r = append(r, u.ToReponse())
+    }
+    return r
+}
+
 func NewUserHandler(store UserRepository) *UserHandler {
     initAdminUser(store)
     return &UserHandler{store: store}
@@ -22,6 +29,7 @@ func NewUserHandler(store UserRepository) *UserHandler {
 func initAdminUser(store UserRepository) {
     err := store.Create(&User{
         UserName: "admin",
+        Password: util.HashPassword("admin"),
         Role:     types.ADMIN,
     })
     if err == nil {
@@ -44,7 +52,7 @@ func (h *UserHandler) ListAll(w http.ResponseWriter, r *http.Request) {
     if err != nil {
         util.WriteError(w, http.StatusInternalServerError, err)
     }
-    util.WriteJSON(w, http.StatusOK, users)
+    util.WriteJSON(w, http.StatusOK, convertUser(users))
 }
 
 func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +65,7 @@ func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
         util.WriteError(w, http.StatusBadRequest, err)
         return
     }
+    user.Password = util.HashPassword(user.Password)
     if err := h.store.Create(&user); err != nil {
         util.WriteError(w, http.StatusInternalServerError, err)
         log.Printf("Create Error: %v", err)
