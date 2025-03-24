@@ -14,6 +14,8 @@ import (
 func Authenticator(handler func(w http.ResponseWriter, r *http.Request),
     userRepo user.UserRepository, requiredRole types.Role) func(w http.ResponseWriter, r *http.Request) {
     return func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Checking authentication")
+
         authHeader := r.Header.Get("Authorization")
         if authHeader == "" {
             log.Println("No Authorization header")
@@ -50,7 +52,7 @@ func Authenticator(handler func(w http.ResponseWriter, r *http.Request),
             util.WriteError(w, http.StatusUnauthorized, errors.New("Incorrect password"))
             return
         }
-        if userFromDb.Role != requiredRole {
+        if types.ADMIN != userFromDb.Role && userFromDb.Role != requiredRole {
             util.WriteError(w, http.StatusUnauthorized, errors.New("Admin role is required"))
             return
         }

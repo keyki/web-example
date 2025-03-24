@@ -14,16 +14,41 @@ type UserHandler struct {
     store UserRepository
 }
 
-func convertUser(users []*User) (r []*UserResponse) {
+func NewUserHandler(store UserRepository) *UserHandler {
+    initAdminUser(store)
+    return &UserHandler{store: store}
+}
+
+func convertToUserResponse(users []*User) (r []*UserResponse) {
     for _, u := range users {
         r = append(r, u.ToReponse())
     }
     return r
 }
 
-func NewUserHandler(store UserRepository) *UserHandler {
-    initAdminUser(store)
-    return &UserHandler{store: store}
+func (h *UserHandler) ListAll(w http.ResponseWriter, r *http.Request) {
+    users, err := h.store.ListAll()
+    if err != nil {
+        util.WriteError(w, http.StatusInternalServerError, err)
+    }
+    util.WriteJSON(w, http.StatusOK, convertToUserResponse(users))
+}
+
+func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
+    var userRequest UserRequest
+    if err := json.NewDecoder(r.Body).Decode(&userRequest); err != nil {
+        util.WriteError(w, http.StatusBadRequest, err)
+        return
+    }
+    if err := userRequest.Validate(); err != nil {
+        util.WriteError(w, http.StatusBadRequest, err)
+        return
+    }
+    userRequest.Password = util.HashPassword(userRequest.Password)
+    if err := h.store.Create(userRequest.ToUser()); err != nil {
+        util.WriteError(w, http.StatusInternalServerError, err)
+        log.Printf("Create Error: %v", err)
+    }
 }
 
 func initAdminUser(store UserRepository) {
@@ -44,30 +69,5 @@ func initAdminUser(store UserRepository) {
         }
     } else {
         log.Printf("Cannot create admin user: %v", err)
-    }
-}
-
-func (h *UserHandler) ListAll(w http.ResponseWriter, r *http.Request) {
-    users, err := h.store.ListAll()
-    if err != nil {
-        util.WriteError(w, http.StatusInternalServerError, err)
-    }
-    util.WriteJSON(w, http.StatusOK, convertUser(users))
-}
-
-func (h *UserHandler) Create(w http.ResponseWriter, r *http.Request) {
-    var user User
-    if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-        util.WriteError(w, http.StatusBadRequest, err)
-        return
-    }
-    if err := user.Validate(); err != nil {
-        util.WriteError(w, http.StatusBadRequest, err)
-        return
-    }
-    user.Password = util.HashPassword(user.Password)
-    if err := h.store.Create(&user); err != nil {
-        util.WriteError(w, http.StatusInternalServerError, err)
-        log.Printf("Create Error: %v", err)
     }
 }
