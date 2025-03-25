@@ -11,3 +11,24 @@ type Order struct {
 	UserID   int                `gorm:"not null"`
 	User     *user.User         `gorm:"foreignKey:UserID"`
 }
+
+func (o *Order) ToResponse() *Response {
+	return &Response{
+		ID:       o.ID,
+		Products: product.ConvertToResponse(o.Products),
+	}
+}
+
+type Request struct {
+	Products []*ProductRequest `json:"products"`
+}
+
+type Response struct {
+	ID       int                 `json:"id"`
+	Products []*product.Response `json:"products"`
+}
+
+type ProductRequest struct {
+	Name     string `validate:"required;min=3"`
+	Quantity int    `validate:"required"`
+}

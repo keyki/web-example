@@ -16,7 +16,7 @@ type Product struct {
 	Description string   `gorm:"type:text"`
 	Price       float64  `gorm:"not null;default:0"`
 	Currency    Currency `gorm:"not null;type:varchar(5);default:HUF"`
-	Quantity    int      `json:"quantity"`
+	Quantity    int      `gorm:"not null;default:1"`
 }
 
 type Request struct {

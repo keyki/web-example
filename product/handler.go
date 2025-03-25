@@ -27,7 +27,7 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
-	util.WriteJSON(w, http.StatusOK, convertToResponse(products))
+	util.WriteJSON(w, http.StatusOK, ConvertToResponse(products))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, http.StatusOK, product.ToResponse())
 }
 
-func convertToResponse(products []*Product) (r []*Response) {
+func ConvertToResponse(products []*Product) (r []*Response) {
 	for _, p := range products {
 		r = append(r, p.ToResponse())
 	}

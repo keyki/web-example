@@ -21,11 +21,12 @@ func NewStore(db *gorm.DB) *Store {
 
 func (s *Store) ListAll() ([]*User, error) {
 	log.Printf("Listing users")
-	var users []*User
+	users := make([]*User, 0)
 	result := s.db.Find(&users)
 	if result.Error != nil {
 		return users, result.Error
 	}
+	log.Printf("Found %d users", len(users))
 	return users, nil
 }
 

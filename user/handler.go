@@ -22,7 +22,8 @@ func NewHandler(store Repository) *Handler {
 	return &Handler{store: store}
 }
 
-func convertToUserResponse(users []*User) (r []*Response) {
+func convertToUserResponse(users []*User) []*Response {
+	r := make([]*Response, 0)
 	for _, u := range users {
 		r = append(r, u.ToResponse())
 	}

@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"web-example/order"
 	"web-example/product"
 	"web-example/user"
 )
@@ -27,6 +28,9 @@ func (s *Server) Listen() {
 	productStore := product.NewStore(s.db)
 	productHandler := product.NewHandler(productStore)
 
+	orderStore := order.NewStore(s.db)
+	orderHandler := order.NewHandler(orderStore, userStore, productStore)
+
 	v1Mux := http.NewServeMux()
 	v1Mux.HandleFunc("GET /users", userHandler.ListAll)
 	v1Mux.HandleFunc("POST /user", userHandler.Create)
@@ -35,6 +39,8 @@ func (s *Server) Listen() {
 	v1Mux.HandleFunc("GET /products", productHandler.ListAll)
 	v1Mux.HandleFunc("POST /product", productHandler.Create)
 	v1Mux.HandleFunc("GET /product/{name}", productHandler.Get)
+
+	v1Mux.HandleFunc("GET /orders", orderHandler.ListAll)
 
 	userMiddleware := CreateMiddleware(AuthenticationMiddleware)
 	wrappedUserMux := userMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))

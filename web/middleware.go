@@ -1,11 +1,9 @@
 package web
 
 import (
-	"encoding/base64"
 	"errors"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 	"web-example/types"
 	"web-example/user"
@@ -27,39 +25,20 @@ func AuthenticationMiddleware(userRepo user.Repository, next http.Handler) http.
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Checking authentication")
 
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
+		username, password, ok := r.BasicAuth()
+		if !ok {
 			log.Println("No Authorization header")
 			util.WriteError(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 			return
 		}
 
-		authParts := strings.SplitN(authHeader, " ", 2)
-		if len(authParts) != 2 || authParts[0] != "Basic" {
-			util.WriteError(w, http.StatusUnauthorized, errors.New("Only Basic auth is supported"))
-			return
-		}
-
-		decoded, err := base64.StdEncoding.DecodeString(authParts[1])
-		if err != nil {
-			log.Printf("Error decoding base64 auth: %v", err)
-			util.WriteError(w, http.StatusUnauthorized, errors.New("Unauthorized"))
-			return
-		}
-
-		creds := strings.SplitN(string(decoded), ":", 2)
-		if len(creds) != 2 {
-			util.WriteError(w, http.StatusUnauthorized, errors.New("Username format is incorrect"))
-		}
-
-		username := creds[0]
 		userFromDb, err := userRepo.FindByUsername(username)
 		if err != nil {
 			log.Printf("Error finding user: %v", err)
 			util.WriteError(w, http.StatusUnauthorized, errors.New("User not found"))
 			return
 		}
-		if !util.CheckPassword(userFromDb.Password, creds[1]) {
+		if !util.CheckPassword(userFromDb.Password, password) {
 			util.WriteError(w, http.StatusUnauthorized, errors.New("Incorrect password"))
 			return
 		}
