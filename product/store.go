@@ -14,7 +14,7 @@ type Repository interface {
 	Create(product *Product) error
 	FindByName(name string) (*Product, error)
 	FindAllByName(names []string) ([]*Product, error)
-	Update(product *Product, tx *gorm.DB) error
+	UpdateQuantity(product *Product, tx *gorm.DB) error
 }
 
 type Store struct {
@@ -79,7 +79,7 @@ func (s *Store) FindAllByName(names []string) ([]*Product, error) {
 	return products, nil
 }
 
-func (s *Store) Update(product *Product, tx *gorm.DB) error {
+func (s *Store) UpdateQuantity(product *Product, tx *gorm.DB) error {
 	log.Printf("Updating product: %v", *product)
 	if tx != nil {
 		return updateInTransaction(product, tx)
@@ -88,7 +88,7 @@ func (s *Store) Update(product *Product, tx *gorm.DB) error {
 }
 
 func updateInTransaction(product *Product, tx *gorm.DB) error {
-	result := tx.Updates(product)
+	result := tx.Model(&product).Select("Quantity").Updates(Product{Quantity: product.Quantity})
 	if result.Error != nil {
 		return result.Error
 	}

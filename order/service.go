@@ -50,7 +50,7 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 
 	for _, prod := range products {
 		prod.Quantity -= request.GetProductRequestByName(prod.Name).Quantity
-		err := productStore.Update(prod, tx)
+		err := productStore.UpdateQuantity(prod, tx)
 		if err != nil {
 			log.Printf("Error updating product: %v", err)
 			tx.Rollback()
