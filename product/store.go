@@ -5,6 +5,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"log"
+	"web-example/types"
 )
 
 type Repository interface {
@@ -81,14 +82,14 @@ func (s *Store) init() {
 		Name:        "pen",
 		Description: "Blue pen",
 		Price:       100,
-		Currency:    HUF,
+		Currency:    types.HUF,
 		Quantity:    50,
 	})
 	s.Create(&Product{
 		Name:        "book",
 		Description: "Harry Potter 1",
 		Price:       5500,
-		Currency:    HUF,
+		Currency:    types.HUF,
 		Quantity:    12,
 	})
 }

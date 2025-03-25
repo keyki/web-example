@@ -34,7 +34,6 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 	order := &Order{
 		Products: convertProductsToOrderProducts(products, request),
 		UserID:   userInDb.ID,
-		User:     userInDb,
 	}
 
 	id, err := orderStore.Create(order)
@@ -125,7 +124,6 @@ func convertProductsToOrderProducts(products []*product.Product, request *Reques
 	for _, prd := range products {
 		orderProducts = append(orderProducts, &OrderProduct{
 			ProductID:         prd.ID,
-			Product:           prd,
 			RequestedQuantity: request.GetProductRequestByName(prd.Name).Quantity,
 		})
 	}

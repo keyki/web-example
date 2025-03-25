@@ -3,6 +3,7 @@ package order
 import (
 	"fmt"
 	"web-example/product"
+	"web-example/types"
 	"web-example/user"
 )
 
@@ -29,7 +30,7 @@ type Response struct {
 	ID       int                `json:"id"`
 	Products []*ProductResponse `json:"products"`
 	Total    float64            `json:"total"`
-	Currency product.Currency   `json:"currency"`
+	Currency types.Currency     `json:"currency"`
 	Error    string             `json:"error"`
 }
 
@@ -42,7 +43,7 @@ type ProductResponse struct {
 	Name     string
 	Quantity int
 	Price    float64
-	Currency product.Currency
+	Currency types.Currency
 }
 
 func (r Request) String() string {
