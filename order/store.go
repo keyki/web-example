@@ -20,7 +20,7 @@ func NewStore(db *gorm.DB) *Store {
 
 func (s *Store) ListAll(userId int) ([]*Order, error) {
 	orders := make([]*Order, 0)
-	result := s.db.Preload("Products").Where("user_id = ?", userId).Find(&orders)
+	result := s.db.Preload("Products.Product").Where("user_id = ?", userId).Find(&orders)
 	if result.Error != nil {
 		return orders, result.Error
 	}

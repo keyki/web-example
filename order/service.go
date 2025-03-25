@@ -27,8 +27,12 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		return nil, util.NewInternalError()
 	}
 
+	for _, prod := range products {
+		reduceProductQuantityByRequestCount(prod, request.GetProductRequestByName(prod.Name))
+	}
+
 	order := &Order{
-		Products: products,
+		Products: convertProductsToOrderProducts(products, request),
 		UserID:   userInDb.ID,
 		User:     userInDb,
 	}
@@ -42,9 +46,24 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 
 	return &Response{
 		ID:       id,
-		Products: convertProductRequestsToResponses(request.Products),
+		Products: convertProductRequestsToResponses(products, request.Products),
+		Total:    calcTotalPriceOfRequest(products, request),
+		Currency: products[0].Currency,
 		Error:    "",
 	}, nil
+}
+
+func reduceProductQuantityByRequestCount(product *product.Product, productRequest *ProductRequest) {
+	product.Quantity -= productRequest.Quantity
+}
+
+func calcTotalPriceOfRequest(products []*product.Product, request *Request) float64 {
+	price := 0.0
+	for _, prd := range products {
+		prodReq := request.GetProductRequestByName(prd.Name)
+		price += prd.Price * float64(prodReq.Quantity)
+	}
+	return price
 }
 
 func validateOrderEligibility(products []*product.Product, request *Request) (*Response, bool) {
@@ -56,7 +75,7 @@ func validateOrderEligibility(products []*product.Product, request *Request) (*R
 	}
 
 	for _, p := range products {
-		if !checkOrderEligibility(p, request.GetProductRequestByName(p.Name)) {
+		if !checkProductQunatity(p, request.GetProductRequestByName(p.Name)) {
 			msg := fmt.Sprintf("There are not enough product '%s' to place the order, max item(s): %d", p.Name, p.Quantity)
 			log.Println(msg)
 			return &Response{
@@ -85,17 +104,30 @@ func getMissingProductNames(products []*product.Product, request *Request) []str
 	return missingProducts
 }
 
-func checkOrderEligibility(product *product.Product, request *ProductRequest) bool {
+func checkProductQunatity(product *product.Product, request *ProductRequest) bool {
 	if product.Quantity >= request.Quantity {
 		return true
 	}
 	return false
 }
 
-func convertProductRequestsToResponses(requests []*ProductRequest) []*ProductResponse {
+func convertProductRequestsToResponses(products []*product.Product, requests []*ProductRequest) []*ProductResponse {
 	response := make([]*ProductResponse, 0)
 	for _, request := range requests {
-		response = append(response, request.ToProductResponse())
+		prod := product.FindByName(products, request.Name)
+		response = append(response, request.ToProductResponse(prod))
 	}
 	return response
+}
+
+func convertProductsToOrderProducts(products []*product.Product, request *Request) []*OrderProduct {
+	var orderProducts []*OrderProduct
+	for _, prd := range products {
+		orderProducts = append(orderProducts, &OrderProduct{
+			ProductID:         prd.ID,
+			Product:           prd,
+			RequestedQuantity: request.GetProductRequestByName(prd.Name).Quantity,
+		})
+	}
+	return orderProducts
 }

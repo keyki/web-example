@@ -22,7 +22,12 @@ func main() {
 	}
 	log.Println("Successfully connected to database")
 
-	err = db.AutoMigrate(&user.User{}, &product.Product{}, &order.Order{})
+	err = db.AutoMigrate(
+		&user.User{},
+		&product.Product{},
+		&order.Order{},
+		&order.OrderProduct{},
+	)
 	if err != nil {
 		log.Fatalf("Failed to migrate schema: %v", err)
 	}

@@ -7,10 +7,17 @@ import (
 )
 
 type Order struct {
-	ID       int                `gorm:"primaryKey,autoIncrement"`
-	Products []*product.Product `gorm:"many2many:order_products"`
-	UserID   int                `gorm:"not null"`
-	User     *user.User         `gorm:"foreignKey:UserID"`
+	ID       int             `gorm:"primaryKey,autoIncrement"`
+	Products []*OrderProduct `gorm:"foreignKey:OrderID"`
+	UserID   int             `gorm:"not null"`
+	User     *user.User      `gorm:"foreignKey:UserID"`
+}
+
+type OrderProduct struct {
+	OrderID           int              `gorm:"primaryKey"`
+	ProductID         int              `gorm:"primaryKey"`
+	Product           *product.Product `gorm:"foreignKey:ProductID"`
+	RequestedQuantity int              `gorm:"not null"`
 }
 
 type Request struct {
@@ -21,6 +28,8 @@ type Request struct {
 type Response struct {
 	ID       int                `json:"id"`
 	Products []*ProductResponse `json:"products"`
+	Total    float64            `json:"total"`
+	Currency product.Currency   `json:"currency"`
 	Error    string             `json:"error"`
 }
 
@@ -32,6 +41,8 @@ type ProductRequest struct {
 type ProductResponse struct {
 	Name     string
 	Quantity int
+	Price    float64
+	Currency product.Currency
 }
 
 func (r Request) String() string {
@@ -42,17 +53,12 @@ func (r Request) String() string {
 	return result
 }
 
-func (o *Order) ToResponse() *Response {
-	return &Response{
-		ID:       o.ID,
-		Products: convertProductsToResponses(o.Products),
-	}
-}
-
-func (pr *ProductRequest) ToProductResponse() *ProductResponse {
+func (pr *ProductRequest) ToProductResponse(prod *product.Product) *ProductResponse {
 	return &ProductResponse{
 		Name:     pr.Name,
 		Quantity: pr.Quantity,
+		Price:    prod.Price,
+		Currency: prod.Currency,
 	}
 }
 
@@ -73,12 +79,44 @@ func (r *Request) GetProductRequestByName(name string) *ProductRequest {
 	return nil
 }
 
-func convertProductsToResponses(products []*product.Product) []*ProductResponse {
+func (o Order) String() string {
+	return fmt.Sprintf("Order: user: %s, products: %v", o.User.UserName, o.Products)
+}
+
+func (o *Order) ToResponse() *Response {
+	return &Response{
+		ID:       o.ID,
+		Products: convertProductsToResponses(o.Products),
+		Total:    calcTotalPriceOfOrderProducts(o.Products),
+		Currency: o.Products[0].Product.Currency,
+	}
+}
+
+func (o *Order) FindProductByName(name string) *product.Product {
+	for _, p := range o.Products {
+		if p.Product.Name == name {
+			return p.Product
+		}
+	}
+	return nil
+}
+
+func calcTotalPriceOfOrderProducts(products []*OrderProduct) float64 {
+	total := 0.0
+	for _, prd := range products {
+		total += prd.Product.Price * float64(prd.RequestedQuantity)
+	}
+	return total
+}
+
+func convertProductsToResponses(orderProducts []*OrderProduct) []*ProductResponse {
 	response := make([]*ProductResponse, 0)
-	for _, p := range products {
+	for _, op := range orderProducts {
 		response = append(response, &ProductResponse{
-			Name:     p.Name,
-			Quantity: p.Quantity,
+			Name:     op.Product.Name,
+			Quantity: op.RequestedQuantity,
+			Price:    op.Product.Price,
+			Currency: op.Product.Currency,
 		})
 	}
 	return response

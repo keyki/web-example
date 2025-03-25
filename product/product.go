@@ -1,6 +1,7 @@
 package product
 
 import (
+	"fmt"
 	"web-example/validator"
 )
 
@@ -45,6 +46,19 @@ func (p *Product) ToResponse() *Response {
 		Currency:    p.Currency,
 		Quantity:    p.Quantity,
 	}
+}
+
+func FindByName(products []*Product, name string) *Product {
+	for _, product := range products {
+		if product.Name == name {
+			return product
+		}
+	}
+	return nil
+}
+
+func (p Product) String() string {
+	return fmt.Sprintf("Name: %s Price: %f %s Quantity: %d", p.Name, p.Price, p.Currency, p.Quantity)
 }
 
 func (p *Request) Validate() error {
