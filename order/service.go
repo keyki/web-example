@@ -1,15 +1,17 @@
 package order
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"web-example/database"
 	"web-example/product"
 	"web-example/user"
 	"web-example/util"
 )
 
 func PlaceOrder(request *Request, userStore user.Repository, productStore product.Repository,
-	orderStore Repository) (*Response, error) {
+	orderStore Repository, txService database.Transactional) (*Response, error) {
 
 	products, err := productStore.FindAllByName(request.AllProductNames())
 	if err != nil {
@@ -27,21 +29,47 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		return nil, util.NewInternalError()
 	}
 
-	for _, prod := range products {
-		reduceProductQuantityByRequestCount(prod, request.GetProductRequestByName(prod.Name))
-	}
-
 	order := &Order{
 		Products: convertProductsToOrderProducts(products, request),
 		UserID:   userInDb.ID,
 	}
 
-	id, err := orderStore.Create(order)
+	tx := txService.BeginTransaction()
+	if tx.Error != nil {
+		log.Printf("Error starting transaction: %v", tx.Error)
+		return nil, util.NewInternalError()
+	}
+
+	id, err := orderStore.Create(order, tx)
 	if err != nil {
 		log.Printf("Error creating order: %v", err)
+		tx.Rollback()
 		return nil, util.NewInternalError()
 	}
 	log.Printf("Created order: %v", id)
+
+	for _, prod := range products {
+		prod.Quantity -= request.GetProductRequestByName(prod.Name).Quantity
+		err := productStore.Update(prod, tx)
+		if err != nil {
+			log.Printf("Error updating product: %v", err)
+			tx.Rollback()
+			var transactionError database.TransactionError
+			if errors.As(err, &transactionError) {
+				return &Response{
+					Error: "Product quantity has changed, please try again: " + prod.Name,
+				}, nil
+			}
+			return nil, util.NewInternalError()
+		}
+	}
+
+	result := tx.Commit()
+	if result.Error != nil {
+		log.Printf("Error committing transaction: %v", result.Error)
+		tx.Rollback()
+		return nil, util.NewInternalError()
+	}
 
 	return &Response{
 		ID:       id,
@@ -50,10 +78,6 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		Currency: products[0].Currency,
 		Error:    "",
 	}, nil
-}
-
-func reduceProductQuantityByRequestCount(product *product.Product, productRequest *ProductRequest) {
-	product.Quantity -= productRequest.Quantity
 }
 
 func calcTotalPriceOfRequest(products []*product.Product, request *Request) float64 {

@@ -7,7 +7,7 @@ import (
 
 type Repository interface {
 	ListAll(userId int) ([]*Order, error)
-	Create(order *Order) (int, error)
+	Create(order *Order, tx *gorm.DB) (int, error)
 }
 
 type Store struct {
@@ -27,11 +27,18 @@ func (s *Store) ListAll(userId int) ([]*Order, error) {
 	return orders, nil
 }
 
-func (s *Store) Create(order *Order) (int, error) {
-	log.Printf("Creating order: %v", *order)
-	result := s.db.Create(&order)
+func (s *Store) Create(order *Order, tx *gorm.DB) (int, error) {
+	if tx != nil {
+		return createInTransaction(order, tx)
+	}
+	return createInTransaction(order, s.db)
+}
+
+func createInTransaction(order *Order, tx *gorm.DB) (int, error) {
+	result := tx.Create(&order)
 	err := result.Error
 	if err != nil {
+		log.Printf("Error creating order: %v", err)
 		return 0, err
 	}
 	return order.ID, nil

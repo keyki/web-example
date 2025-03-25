@@ -5,6 +5,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 	"log"
+	"web-example/database"
 	"web-example/types"
 )
 
@@ -13,6 +14,7 @@ type Repository interface {
 	Create(product *Product) error
 	FindByName(name string) (*Product, error)
 	FindAllByName(names []string) ([]*Product, error)
+	Update(product *Product, tx *gorm.DB) error
 }
 
 type Store struct {
@@ -75,6 +77,25 @@ func (s *Store) FindAllByName(names []string) ([]*Product, error) {
 	}
 	log.Printf("Found %d products", len(products))
 	return products, nil
+}
+
+func (s *Store) Update(product *Product, tx *gorm.DB) error {
+	log.Printf("Updating product: %v", *product)
+	if tx != nil {
+		return updateInTransaction(product, tx)
+	}
+	return updateInTransaction(product, s.db)
+}
+
+func updateInTransaction(product *Product, tx *gorm.DB) error {
+	result := tx.Updates(product)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return database.TransactionError{Message: "row has been updated by someone else"}
+	}
+	return nil
 }
 
 func (s *Store) init() {

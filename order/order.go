@@ -81,7 +81,7 @@ func (r *Request) GetProductRequestByName(name string) *ProductRequest {
 }
 
 func (o Order) String() string {
-	return fmt.Sprintf("Order: user: %s, products: %v", o.User.UserName, o.Products)
+	return fmt.Sprintf("Order: products: %v", o.Products)
 }
 
 func (o *Order) ToResponse() *Response {

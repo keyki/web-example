@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"web-example/database"
 	"web-example/product"
 	"web-example/user"
 	"web-example/util"
@@ -15,13 +16,15 @@ type Handler struct {
 	store        Repository
 	userStore    user.Repository
 	productStore product.Repository
+	txService    database.Transactional
 }
 
-func NewHandler(store Repository, userStore user.Repository, productStore product.Repository) *Handler {
+func NewHandler(store Repository, userStore user.Repository, productStore product.Repository, txService *database.TransactionService) *Handler {
 	return &Handler{
 		store:        store,
 		userStore:    userStore,
 		productStore: productStore,
+		txService:    txService,
 	}
 }
 
@@ -53,7 +56,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received order request: %+v", req)
 
 	req.username = util.GetUsername(r)
-	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.store)
+	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.store, h.txService)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 		return

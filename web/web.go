@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"web-example/database"
 	"web-example/order"
 	"web-example/product"
 	"web-example/user"
@@ -28,8 +29,9 @@ func (s *Server) Listen() {
 	productStore := product.NewStore(s.db)
 	productHandler := product.NewHandler(productStore)
 
+	transactionService := database.NewDbTransaction(s.db)
 	orderStore := order.NewStore(s.db)
-	orderHandler := order.NewHandler(orderStore, userStore, productStore)
+	orderHandler := order.NewHandler(orderStore, userStore, productStore, transactionService)
 
 	v1Mux := http.NewServeMux()
 	v1Mux.HandleFunc("GET /users", userHandler.ListAll)

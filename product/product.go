@@ -2,6 +2,7 @@ package product
 
 import (
 	"fmt"
+	"gorm.io/plugin/optimisticlock"
 	"web-example/types"
 	"web-example/validator"
 )
@@ -13,6 +14,7 @@ type Product struct {
 	Price       float64        `gorm:"not null;default:0"`
 	Currency    types.Currency `gorm:"not null;type:varchar(5);default:HUF"`
 	Quantity    int            `gorm:"not null;default:1"`
+	Version     optimisticlock.Version
 }
 
 type Request struct {
