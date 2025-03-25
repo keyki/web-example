@@ -1,6 +1,8 @@
 package product
 
-import "web-example/validator"
+import (
+	"web-example/validator"
+)
 
 var (
 	HUF = Currency("HUF")

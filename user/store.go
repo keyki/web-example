@@ -9,6 +9,12 @@ import (
 	"web-example/util"
 )
 
+type Repository interface {
+	ListAll() ([]*User, error)
+	Create(user *User) error
+	FindByUsername(username string) (*User, error)
+}
+
 type Store struct {
 	db *gorm.DB
 }
@@ -66,5 +72,10 @@ func (s *Store) init() {
 		UserName: "admin",
 		Password: util.HashPassword("admin"),
 		Role:     types.ADMIN,
+	})
+	s.Create(&User{
+		UserName: "alma",
+		Password: util.HashPassword("alma"),
+		Role:     types.USER,
 	})
 }

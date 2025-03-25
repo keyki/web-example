@@ -11,11 +11,6 @@ import (
 	"web-example/util"
 )
 
-type Repository interface {
-	ListAll(userId int) ([]*Order, error)
-	Create(order *Order) error
-}
-
 type Handler struct {
 	store        Repository
 	userStore    user.Repository
@@ -39,14 +34,14 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
 	log.Printf("%d orders found for user: %s", len(orders), username)
-	util.WriteJSON(w, http.StatusOK, convertToResponse(orders))
+	util.WriteJSON(w, http.StatusOK, convertOrdersToResponse(orders))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body: %s", err)
-		util.WriteError(w, http.StatusInternalServerError, errors.New("Internal error happened"))
+		util.WriteError(w, http.StatusInternalServerError, util.NewInternalError())
 	}
 
 	var req Request
@@ -56,9 +51,17 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("Received order request: %+v", req)
+
+	req.username = util.GetUsername(r)
+	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.store)
+	if err != nil {
+		util.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	util.WriteJSON(w, http.StatusOK, response)
 }
 
-func convertToResponse(orders []*Order) []*Response {
+func convertOrdersToResponse(orders []*Order) []*Response {
 	response := make([]*Response, 0)
 	for _, o := range orders {
 		response = append(response, o.ToResponse())

@@ -8,12 +8,6 @@ import (
 	"web-example/util"
 )
 
-type Repository interface {
-	ListAll() ([]*Product, error)
-	Create(product *Product) error
-	FindByName(name string) (*Product, error)
-}
-
 type Handler struct {
 	store Repository
 }

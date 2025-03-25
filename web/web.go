@@ -41,6 +41,7 @@ func (s *Server) Listen() {
 	v1Mux.HandleFunc("GET /product/{name}", productHandler.Get)
 
 	v1Mux.HandleFunc("GET /orders", orderHandler.ListAll)
+	v1Mux.HandleFunc("POST /order", orderHandler.Create)
 
 	userMiddleware := CreateMiddleware(AuthenticationMiddleware)
 	wrappedUserMux := userMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))

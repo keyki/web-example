@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -47,4 +48,13 @@ func HashPassword(password string) string {
 func CheckPassword(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	return err == nil
+}
+
+func NewInternalError() error {
+	return errors.New("Internal error happened, please try again later.")
+}
+
+func GetUsername(r *http.Request) string {
+	username, _, _ := r.BasicAuth()
+	return username
 }

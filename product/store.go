@@ -7,6 +7,13 @@ import (
 	"log"
 )
 
+type Repository interface {
+	ListAll() ([]*Product, error)
+	Create(product *Product) error
+	FindByName(name string) (*Product, error)
+	FindAllByName(names []string) ([]*Product, error)
+}
+
 type Store struct {
 	db *gorm.DB
 }
@@ -56,6 +63,17 @@ func (s *Store) FindByName(name string) (*Product, error) {
 	}
 	log.Printf("Found product: %v", product)
 	return &product, nil
+}
+
+func (s *Store) FindAllByName(names []string) ([]*Product, error) {
+	log.Printf("Finding %d products by names: %v", len(names), names)
+	products := make([]*Product, 0)
+	result := s.db.Where("name IN (?)", names).Find(&products)
+	if result.Error != nil {
+		return products, result.Error
+	}
+	log.Printf("Found %d products", len(products))
+	return products, nil
 }
 
 func (s *Store) init() {
