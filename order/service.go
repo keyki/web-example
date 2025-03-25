@@ -3,6 +3,7 @@ package order
 import (
 	"errors"
 	"fmt"
+	"gorm.io/gorm"
 	"log"
 	"web-example/database"
 	"web-example/product"
@@ -43,7 +44,7 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 	id, err := orderStore.Create(order, tx)
 	if err != nil {
 		log.Printf("Error creating order: %v", err)
-		tx.Rollback()
+		rollbackTransaction(tx)
 		return nil, util.NewInternalError()
 	}
 	log.Printf("Created order: %v", id)
@@ -53,7 +54,7 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		err := productStore.UpdateQuantity(prod, tx)
 		if err != nil {
 			log.Printf("Error updating product: %v", err)
-			tx.Rollback()
+			rollbackTransaction(tx)
 			var transactionError database.TransactionError
 			if errors.As(err, &transactionError) {
 				return &Response{
@@ -67,7 +68,7 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 	result := tx.Commit()
 	if result.Error != nil {
 		log.Printf("Error committing transaction: %v", result.Error)
-		tx.Rollback()
+		rollbackTransaction(tx)
 		return nil, util.NewInternalError()
 	}
 
@@ -78,6 +79,11 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		Currency: products[0].Currency,
 		Error:    "",
 	}, nil
+}
+
+func rollbackTransaction(tx *gorm.DB) {
+	log.Printf("Rollback transaction")
+	tx.Rollback()
 }
 
 func calcTotalPriceOfRequest(products []*product.Product, request *Request) float64 {

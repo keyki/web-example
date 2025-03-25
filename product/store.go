@@ -88,7 +88,8 @@ func (s *Store) UpdateQuantity(product *Product, tx *gorm.DB) error {
 }
 
 func updateInTransaction(product *Product, tx *gorm.DB) error {
-	result := tx.Model(&product).Select("Quantity").Updates(Product{Quantity: product.Quantity})
+	//result := tx.Model(&product).Select("Quantity").Save(&Product{Quantity: product.Quantity})
+	result := tx.Model(&product).Update("quantity", product.Quantity)
 	if result.Error != nil {
 		return result.Error
 	}
