@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"web-example/database"
 	"web-example/log"
 	"web-example/product"
@@ -34,13 +35,14 @@ func NewHandler(store Repository, userStore user.Repository, productStore produc
 
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	username, _, _ := r.BasicAuth()
-	log.Logger(r.Context()).Info("List all orders for user: ", username)
+	logger := log.Logger(r.Context())
+	logger.Info("List all orders for user: ", username)
 	userInDb, _ := h.userStore.FindByUsername(r.Context(), username)
 	orders, err := h.store.ListAll(r.Context(), userInDb.ID)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
-	log.Logger(r.Context()).Infof("%d orders found for user: %s", len(orders), username)
+	logger.Infof("%d orders found for user: %s", len(orders), username)
 	util.WriteJSON(w, http.StatusOK, convertOrdersToResponse(orders))
 }
 
@@ -66,6 +68,47 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	util.WriteJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	logger := log.Logger(r.Context())
+	orderId := r.PathValue("orderId")
+	logger.Infof("Received order delete request: %+v", orderId)
+
+	id, err := strconv.Atoi(orderId)
+	if err != nil {
+		logger.Infof("Error converting order id to int: %v", err)
+		util.WriteError(w, http.StatusBadRequest, errors.New("Invalid orderId"))
+		return
+	}
+
+	userInDb, err := h.userStore.FindByUsername(r.Context(), util.GetUsername(r))
+	if err != nil {
+		logger.Infof("Error finding user: %v", err)
+		util.WriteError(w, http.StatusInternalServerError, err)
+	}
+
+	order, err := h.store.Find(r.Context(), id, userInDb.ID)
+	if err != nil {
+		logger.Infof("Error finding order: %v", err)
+		util.WriteError(w, http.StatusInternalServerError, util.NewInternalError())
+		return
+	}
+
+	if order == nil {
+		logger.Infof("Order with id %d not found", id)
+		util.WriteError(w, http.StatusNotFound, errors.New("Order not found"))
+		return
+	}
+
+	err = h.store.Delete(r.Context(), order)
+	if err != nil {
+		logger.Infof("Error deleting order: %v", err)
+		util.WriteError(w, http.StatusInternalServerError, util.NewInternalError())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func convertOrdersToResponse(orders []*Order) []*Response {

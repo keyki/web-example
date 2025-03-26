@@ -44,6 +44,7 @@ func (s *Server) Listen() {
 
 	v1Mux.HandleFunc("GET /orders", orderHandler.ListAll)
 	v1Mux.HandleFunc("POST /order", orderHandler.Create)
+	v1Mux.HandleFunc("DELETE /order/{orderId}", orderHandler.Delete)
 
 	authMiddleware := CreateMiddleware(AuthenticationMiddleware)
 	wrappedAuthMux := authMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))

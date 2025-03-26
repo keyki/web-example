@@ -8,7 +8,7 @@ import (
 
 type Order struct {
 	ID       int             `gorm:"primaryKey,autoIncrement"`
-	Products []*OrderProduct `gorm:"foreignKey:OrderID"`
+	Products []*OrderProduct `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE"`
 	UserID   int             `gorm:"not null"`
 	User     *user.User      `gorm:"foreignKey:UserID"`
 }
