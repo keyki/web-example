@@ -1,10 +1,13 @@
 package web
 
 import (
+	"context"
 	"errors"
-	"log"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+	"web-example/log"
 	"web-example/types"
 	"web-example/user"
 	"web-example/util"
@@ -23,18 +26,18 @@ func CreateMiddleware(middlewares ...Middleware) Middleware {
 
 func AuthenticationMiddleware(userRepo user.Repository, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Checking authentication")
+		log.Logger(r.Context()).Info("Checking authentication")
 
 		username, password, ok := r.BasicAuth()
 		if !ok {
-			log.Println("No Authorization header")
+			log.Logger(r.Context()).Info("No Authorization header")
 			util.WriteError(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 			return
 		}
 
-		userFromDb, err := userRepo.FindByUsername(username)
+		userFromDb, err := userRepo.FindByUsername(r.Context(), username)
 		if err != nil {
-			log.Printf("Error finding user: %v", err)
+			log.Logger(r.Context()).Infof("Error finding user: %v", err)
 			util.WriteError(w, http.StatusUnauthorized, errors.New("User not found"))
 			return
 		}
@@ -55,6 +58,22 @@ func MeasureMiddleware(_ user.Repository, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		next.ServeHTTP(w, r)
-		log.Printf("%s %s took %v", r.Method, r.URL.Path, time.Since(startTime))
+		log.Logger(r.Context()).Infof("%s %s took %v", r.Method, r.URL.Path, time.Since(startTime))
+	})
+}
+
+func RequestIdMiddleware(_ user.Repository, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestId := uuid.New().String()
+		ctx := context.WithValue(r.Context(), types.ContextKeyReqID, requestId)
+
+		requestLogger := log.BaseLogger().WithFields(logrus.Fields{
+			"request-id": requestId,
+		})
+		ctx = context.WithValue(ctx, types.LogKey, requestLogger)
+
+		r = r.WithContext(ctx)
+		w.Header().Add(types.HTTPHeaderRequestID, requestId)
+		next.ServeHTTP(w, r)
 	})
 }

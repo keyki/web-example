@@ -5,8 +5,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
 	"time"
+	"web-example/log"
 )
 
 type Options struct {
@@ -28,7 +28,7 @@ func Connect(dsn string, opts *Options) (*gorm.DB, error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("Setting up connection pool: %v", opts)
+		log.BaseLogger().Printf("Setting up connection pool: %v", opts)
 		sqlDB.SetMaxOpenConns(opts.MaxOpenConns)
 		sqlDB.SetConnMaxIdleTime(opts.ConnMaxLifetime)
 		sqlDB.SetMaxIdleConns(opts.MaxIdleConns)

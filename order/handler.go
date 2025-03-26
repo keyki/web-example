@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"web-example/database"
+	"web-example/log"
 	"web-example/product"
 	"web-example/user"
 	"web-example/util"
@@ -34,33 +34,33 @@ func NewHandler(store Repository, userStore user.Repository, productStore produc
 
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 	username, _, _ := r.BasicAuth()
-	log.Println("List all orders for user: ", username)
-	userInDb, _ := h.userStore.FindByUsername(username)
-	orders, err := h.store.ListAll(userInDb.ID)
+	log.Logger(r.Context()).Info("List all orders for user: ", username)
+	userInDb, _ := h.userStore.FindByUsername(r.Context(), username)
+	orders, err := h.store.ListAll(r.Context(), userInDb.ID)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
-	log.Printf("%d orders found for user: %s", len(orders), username)
+	log.Logger(r.Context()).Infof("%d orders found for user: %s", len(orders), username)
 	util.WriteJSON(w, http.StatusOK, convertOrdersToResponse(orders))
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error reading body: %s", err)
+		log.Logger(r.Context()).Infof("Error reading body: %s", err)
 		util.WriteError(w, http.StatusInternalServerError, util.NewInternalError())
 	}
 
 	var req Request
 	if err = json.Unmarshal(bodyBytes, &req); err != nil {
-		log.Printf("Error unmarshalling request: %v", err)
+		log.Logger(r.Context()).Infof("Error unmarshalling request: %v", err)
 		util.WriteError(w, http.StatusBadRequest, errors.New("Invalid request"))
 		return
 	}
-	log.Printf("Received order request: %+v", req)
+	log.Logger(r.Context()).Infof("Received order request: %+v", req)
 
 	req.username = util.GetUsername(r)
-	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.orderQueue)
+	response, err := PlaceOrder(r.Context(), &req, h.userStore, h.productStore, h.orderQueue)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 		return

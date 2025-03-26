@@ -1,18 +1,21 @@
 package order
 
 import (
+	"context"
 	"fmt"
 	"gorm.io/gorm"
-	"log"
+	"web-example/log"
 	"web-example/product"
 	"web-example/user"
 	"web-example/util"
 )
 
-func PlaceOrder(request *Request, userStore user.Repository, productStore product.Repository, queue chan *CreateMessage) (*Response, error) {
-	products, err := productStore.FindAllByName(request.AllProductNames())
+func PlaceOrder(ctx context.Context, request *Request, userStore user.Repository,
+	productStore product.Repository, queue chan *CreateMessage) (*Response, error) {
+
+	products, err := productStore.FindAllByName(ctx, request.AllProductNames())
 	if err != nil {
-		log.Printf("Error finding products: %v", err)
+		log.Logger(ctx).Infof("Error finding products: %v", err)
 		return nil, util.NewInternalError()
 	}
 
@@ -23,9 +26,9 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		}, nil
 	}
 
-	userInDb, err := userStore.FindByUsername(request.username)
+	userInDb, err := userStore.FindByUsername(ctx, request.username)
 	if err != nil {
-		log.Printf("Error finding user: %v", err)
+		log.Logger(ctx).Infof("Error finding user: %v", err)
 		return nil, util.NewInternalError()
 	}
 
@@ -40,6 +43,7 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 		Order:       order,
 		ErrResponse: errResp,
 		IdResponse:  idResp,
+		Context:     ctx,
 	}
 
 	select {
@@ -58,8 +62,8 @@ func PlaceOrder(request *Request, userStore user.Repository, productStore produc
 	}
 }
 
-func rollbackTransaction(tx *gorm.DB) {
-	log.Printf("Rollback transaction")
+func rollbackTransaction(ctx context.Context, tx *gorm.DB) {
+	log.Logger(ctx).Info("Rollback transaction")
 	tx.Rollback()
 }
 

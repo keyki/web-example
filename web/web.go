@@ -3,9 +3,9 @@ package web
 import (
 	"fmt"
 	"gorm.io/gorm"
-	"log"
 	"net/http"
 	"web-example/database"
+	"web-example/log"
 	"web-example/order"
 	"web-example/product"
 	"web-example/user"
@@ -21,7 +21,7 @@ func NewApiServer(port int, db *gorm.DB) *Server {
 }
 
 func (s *Server) Listen() {
-	log.Printf("Listening on port %d", s.port)
+	log.BaseLogger().Infof("Listening on port %d", s.port)
 
 	userStore := user.NewStore(s.db)
 	userHandler := user.NewHandler(userStore)
@@ -45,19 +45,19 @@ func (s *Server) Listen() {
 	v1Mux.HandleFunc("GET /orders", orderHandler.ListAll)
 	v1Mux.HandleFunc("POST /order", orderHandler.Create)
 
-	userMiddleware := CreateMiddleware(AuthenticationMiddleware)
-	wrappedUserMux := userMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))
+	authMiddleware := CreateMiddleware(AuthenticationMiddleware)
+	wrappedAuthMux := authMiddleware(userStore, http.StripPrefix("/api/v1", v1Mux))
 
 	mainMux := http.NewServeMux()
 	mainMux.HandleFunc("GET /info", Info)
-	mainMux.Handle("/api/v1/", wrappedUserMux)
+	mainMux.Handle("/api/v1/", wrappedAuthMux)
 
-	mainMiddleware := CreateMiddleware(MeasureMiddleware)
+	mainMiddleware := CreateMiddleware(RequestIdMiddleware, MeasureMiddleware)
 	wrappedMainMux := mainMiddleware(nil, mainMux)
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", s.port), wrappedMainMux)
 	if err != nil {
-		log.Fatalf("Failed to listen on port %d: %v", s.port, err)
+		log.BaseLogger().Fatalf("Failed to listen on port %d: %v", s.port, err)
 	}
 }
 

@@ -3,8 +3,8 @@ package product
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
+	"web-example/log"
 	"web-example/util"
 )
 
@@ -17,7 +17,7 @@ func NewHandler(store Repository) *Handler {
 }
 
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
-	products, err := h.store.ListAll()
+	products, err := h.store.ListAll(r.Context())
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
@@ -34,23 +34,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		util.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	if err := h.store.Create(productRequest.ToProduct()); err != nil {
+	if err := h.store.Create(r.Context(), productRequest.ToProduct()); err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
-		log.Printf("Create Error: %v", err)
+		log.Logger(r.Context()).Infof("Create Error: %v", err)
 	}
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	log.Printf("Find product %s\n", name)
+	log.Logger(r.Context()).Infof("Find product %s", name)
 	if name == "" {
 		util.WriteError(w, http.StatusBadRequest, errors.New("Name is required"))
 		return
 	}
 
-	product, err := h.store.FindByName(name)
+	product, err := h.store.FindByName(r.Context(), name)
 	if err != nil {
-		log.Printf("Find error: %v", err)
+		log.Logger(r.Context()).Infof("Find error: %v", err)
 		util.WriteJSON(w, http.StatusNotFound, []*Response{})
 		return
 	}

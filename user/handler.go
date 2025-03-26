@@ -3,8 +3,8 @@ package user
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
+	"web-example/log"
 	"web-example/util"
 )
 
@@ -25,7 +25,7 @@ func convertToUserResponse(users []*User) []*Response {
 }
 
 func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
-	users, err := h.store.ListAll()
+	users, err := h.store.ListAll(r.Context())
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 	}
@@ -43,23 +43,23 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userRequest.Password = util.HashPassword(userRequest.Password)
-	if err := h.store.Create(userRequest.ToUser()); err != nil {
+	if err := h.store.Create(r.Context(), userRequest.ToUser()); err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
-		log.Printf("Create Error: %v", err)
+		log.Logger(r.Context()).Infof("Create Error: %v", err)
 	}
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	userName := r.PathValue("userName")
-	log.Printf("Find user %s\n", userName)
+	log.Logger(r.Context()).Infof("Find user %s\n", userName)
 	if userName == "" {
 		util.WriteError(w, http.StatusBadRequest, errors.New("UserName is required"))
 		return
 	}
 
-	user, err := h.store.FindByUsername(userName)
+	user, err := h.store.FindByUsername(r.Context(), userName)
 	if err != nil {
-		log.Printf("Find error: %v", err)
+		log.Logger(r.Context()).Infof("Find error: %v", err)
 		util.WriteJSON(w, http.StatusNotFound, []*Response{})
 		return
 	}

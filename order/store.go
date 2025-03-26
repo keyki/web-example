@@ -1,13 +1,14 @@
 package order
 
 import (
+	"context"
 	"gorm.io/gorm"
-	"log"
+	"web-example/log"
 )
 
 type Repository interface {
-	ListAll(userId int) ([]*Order, error)
-	Create(order *Order, tx *gorm.DB) (int, error)
+	ListAll(ctx context.Context, userId int) ([]*Order, error)
+	Create(ctx context.Context, order *Order, tx *gorm.DB) (int, error)
 }
 
 type Store struct {
@@ -18,7 +19,7 @@ func NewStore(db *gorm.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) ListAll(userId int) ([]*Order, error) {
+func (s *Store) ListAll(_ context.Context, userId int) ([]*Order, error) {
 	orders := make([]*Order, 0)
 	result := s.db.Preload("Products.Product").Where("user_id = ?", userId).Find(&orders)
 	if result.Error != nil {
@@ -27,18 +28,18 @@ func (s *Store) ListAll(userId int) ([]*Order, error) {
 	return orders, nil
 }
 
-func (s *Store) Create(order *Order, tx *gorm.DB) (int, error) {
+func (s *Store) Create(ctx context.Context, order *Order, tx *gorm.DB) (int, error) {
 	if tx != nil {
-		return createInTransaction(order, tx)
+		return createInTransaction(ctx, order, tx)
 	}
-	return createInTransaction(order, s.db)
+	return createInTransaction(ctx, order, s.db)
 }
 
-func createInTransaction(order *Order, tx *gorm.DB) (int, error) {
+func createInTransaction(ctx context.Context, order *Order, tx *gorm.DB) (int, error) {
 	result := tx.Create(&order)
 	err := result.Error
 	if err != nil {
-		log.Printf("Error creating order: %v", err)
+		log.Logger(ctx).Infof("Error creating order: %v", err)
 		return 0, err
 	}
 	return order.ID, nil

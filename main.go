@@ -1,9 +1,9 @@
 package main
 
 import (
-	"log"
 	"time"
 	"web-example/database"
+	"web-example/log"
 	"web-example/order"
 	"web-example/product"
 	"web-example/user"
@@ -18,9 +18,9 @@ func main() {
 		ConnMaxLifetime: 10 * time.Minute,
 	})
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.BaseLogger().Fatalf("Failed to connect to database: %v", err)
 	}
-	log.Println("Successfully connected to database")
+	log.BaseLogger().Println("Successfully connected to database")
 
 	err = db.AutoMigrate(
 		&user.User{},
@@ -29,7 +29,7 @@ func main() {
 		&order.OrderProduct{},
 	)
 	if err != nil {
-		log.Fatalf("Failed to migrate schema: %v", err)
+		log.BaseLogger().Fatalf("Failed to migrate schema: %v", err)
 	}
 
 	server := web.NewApiServer(8080, db)

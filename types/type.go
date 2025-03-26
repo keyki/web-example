@@ -10,6 +10,14 @@ var (
 	EUR = Currency("EUR")
 )
 
+const (
+	ContextKeyReqID     ContextKey = "requestID"
+	LogKey              ContextKey = "logger"
+	HTTPHeaderRequestID            = "X-Request-ID"
+)
+
+type ContextKey string
+
 type Role string
 
 type Currency string

@@ -1,21 +1,22 @@
 package product
 
 import (
+	"context"
 	"errors"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
-	"log"
 	"web-example/database"
+	"web-example/log"
 	"web-example/types"
 )
 
 type Repository interface {
-	ListAll() ([]*Product, error)
-	Create(product *Product) error
-	FindByName(name string) (*Product, error)
-	FindAllByName(names []string) ([]*Product, error)
-	FindAllByIds(ids []int) ([]*Product, error)
-	UpdateQuantity(product *Product, tx *gorm.DB) error
+	ListAll(ctx context.Context) ([]*Product, error)
+	Create(ctx context.Context, product *Product) error
+	FindByName(ctx context.Context, name string) (*Product, error)
+	FindAllByName(ctx context.Context, names []string) ([]*Product, error)
+	FindAllByIds(ctx context.Context, ids []int) ([]*Product, error)
+	UpdateQuantity(ctx context.Context, product *Product, tx *gorm.DB) error
 }
 
 type Store struct {
@@ -28,8 +29,8 @@ func NewStore(db *gorm.DB) *Store {
 	return store
 }
 
-func (s *Store) ListAll() ([]*Product, error) {
-	log.Printf("Listing products")
+func (s *Store) ListAll(ctx context.Context) ([]*Product, error) {
+	log.Logger(ctx).Info("Listing products")
 	var products []*Product
 	result := s.db.Find(&products)
 	if result.Error != nil {
@@ -38,61 +39,61 @@ func (s *Store) ListAll() ([]*Product, error) {
 	return products, nil
 }
 
-func (s *Store) Create(product *Product) error {
-	log.Printf("Creating product: %v", *product)
+func (s *Store) Create(ctx context.Context, product *Product) error {
+	log.Logger(ctx).Infof("Creating product: %v", *product)
 	result := s.db.Create(&product)
 	err := result.Error
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				log.Printf("Product '%s' already exists", product.Name)
+				log.Logger(ctx).Infof("Product '%s' already exists", product.Name)
 			} else {
-				log.Println(pgErr)
+				log.Logger(ctx).Info(pgErr)
 			}
 		} else {
-			log.Printf("Cannot create product: %v", err)
+			log.Logger(ctx).Infof("Cannot create product: %v", err)
 		}
 		return err
 	}
 	return nil
 }
 
-func (s *Store) FindByName(name string) (*Product, error) {
-	log.Printf("Finding user by username: %v", name)
+func (s *Store) FindByName(ctx context.Context, name string) (*Product, error) {
+	log.Logger(ctx).Infof("Finding user by username: %v", name)
 	var product Product
 	result := s.db.Where("name = ?", name).First(&product)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	log.Printf("Found product: %v", product)
+	log.Logger(ctx).Infof("Found product: %v", product)
 	return &product, nil
 }
 
-func (s *Store) FindAllByName(names []string) ([]*Product, error) {
-	log.Printf("Finding %d products by names: %v", len(names), names)
+func (s *Store) FindAllByName(ctx context.Context, names []string) ([]*Product, error) {
+	log.Logger(ctx).Infof("Finding %d products by names: %v", len(names), names)
 	products := make([]*Product, 0)
 	result := s.db.Where("name IN (?)", names).Find(&products)
 	if result.Error != nil {
 		return products, result.Error
 	}
-	log.Printf("Found %d products", len(products))
+	log.Logger(ctx).Infof("Found %d products", len(products))
 	return products, nil
 }
 
-func (s *Store) FindAllByIds(ids []int) ([]*Product, error) {
-	log.Printf("Finding %d products by ids: %v", len(ids), ids)
+func (s *Store) FindAllByIds(ctx context.Context, ids []int) ([]*Product, error) {
+	log.Logger(ctx).Infof("Finding %d products by ids: %v", len(ids), ids)
 	products := make([]*Product, 0)
 	result := s.db.Where("id IN (?)", ids).Find(&products)
 	if result.Error != nil {
 		return products, result.Error
 	}
-	log.Printf("Found %d products", len(products))
+	log.Logger(ctx).Infof("Found %d products", len(products))
 	return products, nil
 }
 
-func (s *Store) UpdateQuantity(product *Product, tx *gorm.DB) error {
-	log.Printf("Updating product: %v", *product)
+func (s *Store) UpdateQuantity(ctx context.Context, product *Product, tx *gorm.DB) error {
+	log.Logger(ctx).Infof("Updating product: %v", *product)
 	if tx != nil {
 		return updateInTransaction(product, tx)
 	}
@@ -112,14 +113,14 @@ func updateInTransaction(product *Product, tx *gorm.DB) error {
 }
 
 func (s *Store) init() {
-	s.Create(&Product{
+	s.Create(context.Background(), &Product{
 		Name:        "pen",
 		Description: "Blue pen",
 		Price:       100,
 		Currency:    types.HUF,
 		Quantity:    50,
 	})
-	s.Create(&Product{
+	s.Create(context.Background(), &Product{
 		Name:        "book",
 		Description: "Harry Potter 1",
 		Price:       5500,

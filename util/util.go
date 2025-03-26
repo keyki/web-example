@@ -1,11 +1,13 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 	"net/http"
+	"web-example/log"
 	"web-example/types"
 )
 
@@ -15,7 +17,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 		code = status
 	}
 	if err := writeJSON(w, code, v); err != nil {
-		log.Printf("WriteJSON Error: %v", err)
+		log.BaseLogger().Errorf("WriteJSON Error: %v", err)
 		WriteError(w, http.StatusInternalServerError, err)
 	}
 }
@@ -57,4 +59,8 @@ func NewInternalError() error {
 func GetUsername(r *http.Request) string {
 	username, _, _ := r.BasicAuth()
 	return username
+}
+
+func SetReqID(ctx context.Context) context.Context {
+	return context.WithValue(ctx, types.ContextKeyReqID, uuid.New().String())
 }
