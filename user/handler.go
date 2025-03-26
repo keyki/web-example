@@ -51,7 +51,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	userName := r.PathValue("userName")
-	log.Logger(r.Context()).Infof("Find user %s\n", userName)
+	log.Logger(r.Context()).Infof("Find user %s", userName)
 	if userName == "" {
 		util.WriteError(w, http.StatusBadRequest, errors.New("UserName is required"))
 		return

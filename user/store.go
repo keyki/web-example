@@ -5,10 +5,14 @@ import (
 	"errors"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
+	"time"
+	"web-example/cache"
 	"web-example/log"
 	"web-example/types"
 	"web-example/util"
 )
+
+var userCache = cache.NewCache(30 * time.Second)
 
 type Repository interface {
 	ListAll(ctx context.Context) ([]*User, error)
@@ -60,10 +64,16 @@ func (s *Store) Create(ctx context.Context, user *User) error {
 func (s *Store) FindByUsername(ctx context.Context, username string) (*User, error) {
 	log.Logger(ctx).Infof("Finding user by username: %v", username)
 	var user User
+	cachedUser, found := userCache.Get(username)
+	if found {
+		user, _ = cachedUser.(User)
+		return &user, nil
+	}
 	result := s.db.Where("user_name = ?", username).First(&user)
 	if result.Error != nil {
 		return nil, result.Error
 	}
+	userCache.Set(username, user, 10*time.Second)
 	log.Logger(ctx).Infof("Found user: %v", user)
 	return &user, nil
 }
