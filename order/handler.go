@@ -17,10 +17,14 @@ type Handler struct {
 	userStore    user.Repository
 	productStore product.Repository
 	txService    database.Transactional
+	orderQueue   chan *CreateMessage
 }
 
 func NewHandler(store Repository, userStore user.Repository, productStore product.Repository, txService *database.TransactionService) *Handler {
+	queue := make(chan *CreateMessage, 100)
+	go ProcessOrder(queue, store, productStore, txService)
 	return &Handler{
+		orderQueue:   queue,
 		store:        store,
 		userStore:    userStore,
 		productStore: productStore,
@@ -56,7 +60,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Received order request: %+v", req)
 
 	req.username = util.GetUsername(r)
-	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.store, h.txService)
+	response, err := PlaceOrder(&req, h.userStore, h.productStore, h.orderQueue)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 		return

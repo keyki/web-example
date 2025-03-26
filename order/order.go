@@ -3,7 +3,6 @@ package order
 import (
 	"fmt"
 	"web-example/product"
-	"web-example/types"
 	"web-example/user"
 )
 
@@ -17,71 +16,17 @@ type Order struct {
 type OrderProduct struct {
 	OrderID           int              `gorm:"primaryKey"`
 	ProductID         int              `gorm:"primaryKey"`
+	ProductName       string           `gorm:"not null"`
 	Product           *product.Product `gorm:"foreignKey:ProductID"`
 	RequestedQuantity int              `gorm:"not null"`
 }
 
-type Request struct {
-	username string
-	Products []*ProductRequest `json:"products"`
-}
-
-type Response struct {
-	ID       int                `json:"id"`
-	Products []*ProductResponse `json:"products"`
-	Total    float64            `json:"total"`
-	Currency types.Currency     `json:"currency"`
-	Error    string             `json:"error"`
-}
-
-type ProductRequest struct {
-	Name     string `validate:"required;min=3"`
-	Quantity int    `validate:"required"`
-}
-
-type ProductResponse struct {
-	Name     string
-	Quantity int
-	Price    float64
-	Currency types.Currency
-}
-
-func (r Request) String() string {
-	var result string
-	for _, p := range r.Products {
-		result += fmt.Sprintf("\nName: %s Quantity: %d", p.Name, p.Quantity)
-	}
-	return result
-}
-
-func (pr *ProductRequest) ToProductResponse(prod *product.Product) *ProductResponse {
-	return &ProductResponse{
-		Name:     pr.Name,
-		Quantity: pr.Quantity,
-		Price:    prod.Price,
-		Currency: prod.Currency,
-	}
-}
-
-func (r *Request) AllProductNames() []string {
-	names := make([]string, 0)
-	for _, p := range r.Products {
-		names = append(names, p.Name)
-	}
-	return names
-}
-
-func (r *Request) GetProductRequestByName(name string) *ProductRequest {
-	for _, p := range r.Products {
-		if p.Name == name {
-			return p
-		}
-	}
-	return nil
-}
-
 func (o Order) String() string {
 	return fmt.Sprintf("Order: products: %v", o.Products)
+}
+
+func (o OrderProduct) String() string {
+	return fmt.Sprintf("Product: name: %s, requested: %d", o.ProductName, o.RequestedQuantity)
 }
 
 func (o *Order) ToResponse() *Response {
@@ -95,11 +40,28 @@ func (o *Order) ToResponse() *Response {
 
 func (o *Order) FindProductByName(name string) *product.Product {
 	for _, p := range o.Products {
-		if p.Product.Name == name {
+		if p.ProductName == name {
 			return p.Product
 		}
 	}
 	return nil
+}
+
+func (o *Order) FindOrderProductByName(name string) *OrderProduct {
+	for _, p := range o.Products {
+		if p.ProductName == name {
+			return p
+		}
+	}
+	return nil
+}
+
+func (o *Order) AllProductIds() []int {
+	ids := make([]int, 0)
+	for _, p := range o.Products {
+		ids = append(ids, p.ProductID)
+	}
+	return ids
 }
 
 func calcTotalPriceOfOrderProducts(products []*OrderProduct) float64 {

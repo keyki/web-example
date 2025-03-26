@@ -14,6 +14,7 @@ type Repository interface {
 	Create(product *Product) error
 	FindByName(name string) (*Product, error)
 	FindAllByName(names []string) ([]*Product, error)
+	FindAllByIds(ids []int) ([]*Product, error)
 	UpdateQuantity(product *Product, tx *gorm.DB) error
 }
 
@@ -72,6 +73,17 @@ func (s *Store) FindAllByName(names []string) ([]*Product, error) {
 	log.Printf("Finding %d products by names: %v", len(names), names)
 	products := make([]*Product, 0)
 	result := s.db.Where("name IN (?)", names).Find(&products)
+	if result.Error != nil {
+		return products, result.Error
+	}
+	log.Printf("Found %d products", len(products))
+	return products, nil
+}
+
+func (s *Store) FindAllByIds(ids []int) ([]*Product, error) {
+	log.Printf("Finding %d products by ids: %v", len(ids), ids)
+	products := make([]*Product, 0)
+	result := s.db.Where("id IN (?)", ids).Find(&products)
 	if result.Error != nil {
 		return products, result.Error
 	}
