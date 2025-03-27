@@ -9,6 +9,9 @@ database:
 run:
 	go run main.go
 
+generate:
+	protoc --go_out=. --go-grpc_out=. audit/proto/service.proto
+
 format:
 	go fmt ./...
 

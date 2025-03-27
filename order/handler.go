@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"web-example/audit"
 	"web-example/database"
 	"web-example/log"
 	"web-example/product"
@@ -14,6 +15,7 @@ import (
 )
 
 type Handler struct {
+	auditClient  *audit.Client
 	store        Repository
 	userStore    user.Repository
 	productStore product.Repository
@@ -24,7 +26,9 @@ type Handler struct {
 func NewHandler(store Repository, userStore user.Repository, productStore product.Repository, txService *database.TransactionService) *Handler {
 	queue := make(chan *CreateMessage, 100)
 	go ProcessOrder(queue, store, productStore, txService)
+	client := audit.NewClient()
 	return &Handler{
+		auditClient:  client,
 		orderQueue:   queue,
 		store:        store,
 		userStore:    userStore,
@@ -62,7 +66,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	log.Logger(r.Context()).Infof("Received order request: %+v", req)
 
 	req.username = util.GetUsername(r)
-	response, err := PlaceOrder(r.Context(), &req, h.userStore, h.productStore, h.orderQueue)
+	response, err := PlaceOrder(r.Context(), &req, h.userStore, h.productStore, h.orderQueue, h.auditClient)
 	if err != nil {
 		util.WriteError(w, http.StatusInternalServerError, err)
 		return

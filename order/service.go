@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"gorm.io/gorm"
+	"web-example/audit"
+	pb "web-example/audit/generated"
 	"web-example/log"
 	"web-example/product"
 	"web-example/user"
@@ -11,11 +13,12 @@ import (
 )
 
 func PlaceOrder(ctx context.Context, request *Request, userStore user.Repository,
-	productStore product.Repository, queue chan *CreateMessage) (*Response, error) {
+	productStore product.Repository, queue chan *CreateMessage, auditClient *audit.Client) (*Response, error) {
+	logger := log.Logger(ctx)
 
 	products, err := productStore.FindAllByName(ctx, request.AllProductNames())
 	if err != nil {
-		log.Logger(ctx).Infof("Error finding products: %v", err)
+		logger.Infof("Error finding products: %v", err)
 		return nil, util.NewInternalError()
 	}
 
@@ -28,7 +31,7 @@ func PlaceOrder(ctx context.Context, request *Request, userStore user.Repository
 
 	userInDb, err := userStore.FindByUsername(ctx, request.username)
 	if err != nil {
-		log.Logger(ctx).Infof("Error finding user: %v", err)
+		logger.Infof("Error finding user: %v", err)
 		return nil, util.NewInternalError()
 	}
 
@@ -52,6 +55,13 @@ func PlaceOrder(ctx context.Context, request *Request, userStore user.Repository
 			Error: err.Error(),
 		}, nil
 	case idResp := <-idResp:
+		auditClient.LogOrder(ctx, &pb.CreateOrderRequest{
+			Order: &pb.Order{
+				Id:       int32(idResp),
+				UserId:   int32(userInDb.ID),
+				Products: convertToAuditProducts(order.Products),
+			},
+		})
 		return &Response{
 			ID:       idResp,
 			Products: convertProductRequestsToResponses(products, request.Products),
@@ -95,6 +105,17 @@ func convertProductsToOrderProducts(products []*product.Product, request *Reques
 		})
 	}
 	return orderProducts
+}
+
+func convertToAuditProducts(products []*OrderProduct) []*pb.OrderProduct {
+	var auditProducts []*pb.OrderProduct
+	for _, prd := range products {
+		auditProducts = append(auditProducts, &pb.OrderProduct{
+			ProductId: int32(prd.ProductID),
+			Quantity:  int32(prd.RequestedQuantity),
+		})
+	}
+	return auditProducts
 }
 
 func getMissingProductNames(products []*product.Product, request *Request) []string {
