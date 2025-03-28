@@ -2,6 +2,7 @@ package main
 
 import (
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"net"
 	"strconv"
 	"time"
@@ -47,6 +48,7 @@ func startAuditServer(port int) {
 		log.BaseLogger().Fatalf("Failed to listen: %v", err)
 	}
 	grpcServer := grpc.NewServer()
+	reflection.Register(grpcServer)
 	pb.RegisterAuditServer(grpcServer, &audit.Server{})
 
 	log.BaseLogger().Infof("Audit server is running on port %d", port)

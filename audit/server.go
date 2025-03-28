@@ -23,8 +23,8 @@ func (Server) LogOrder(ctx context.Context, request *pb.CreateOrderRequest) (*pb
 }
 
 func setRequestIdIfExists(ctx context.Context) context.Context {
-	md, foundRequestId := metadata.FromIncomingContext(ctx)
-	if foundRequestId {
+	md, foundMetadata := metadata.FromIncomingContext(ctx)
+	if foundMetadata {
 		requestID := md.Get(string(types.ContextKeyReqID))
 		if len(requestID) > 0 {
 			ctx = context.WithValue(ctx, types.ContextKeyReqID, requestID)

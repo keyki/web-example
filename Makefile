@@ -18,6 +18,15 @@ format:
 tidy:
 	go mod tidy
 
+grpc-info:
+	grpcurl -plaintext localhost:8081 list
+	@echo
+	grpcurl -plaintext localhost:8081 describe audit.Audit
+	@echo
+	grpcurl -plaintext localhost:8081 describe .audit.CreateOrderRequest
+	@echo
+	grpcurl -plaintext localhost:8081 describe .audit.Order
+
 .DEFAULT_GOAL := build
 
 .PHONY: database build
