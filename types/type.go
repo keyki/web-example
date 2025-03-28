@@ -11,8 +11,7 @@ var (
 )
 
 const (
-	ContextKeyReqID     ContextKey = "requestID"
-	LogKey              ContextKey = "logger"
+	ContextKeyReqID     ContextKey = "request-id"
 	HTTPHeaderRequestID            = "X-Request-ID"
 )
 

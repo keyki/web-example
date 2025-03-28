@@ -51,6 +51,7 @@ func PlaceOrder(ctx context.Context, request *Request, userStore user.Repository
 
 	select {
 	case err := <-errResp:
+		logger.Infof("Error creating order: %v", err)
 		return &Response{
 			Error: err.Error(),
 		}, nil

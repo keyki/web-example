@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 	"web-example/log"
@@ -66,12 +65,6 @@ func RequestIdMiddleware(_ user.Repository, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requestId := uuid.New().String()
 		ctx := context.WithValue(r.Context(), types.ContextKeyReqID, requestId)
-
-		requestLogger := log.BaseLogger().WithFields(logrus.Fields{
-			"request-id": requestId,
-		})
-		ctx = context.WithValue(ctx, types.LogKey, requestLogger)
-
 		r = r.WithContext(ctx)
 		w.Header().Add(types.HTTPHeaderRequestID, requestId)
 		next.ServeHTTP(w, r)

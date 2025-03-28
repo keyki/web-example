@@ -64,3 +64,7 @@ func GetUsername(r *http.Request) string {
 func SetReqID(ctx context.Context) context.Context {
 	return context.WithValue(ctx, types.ContextKeyReqID, uuid.New().String())
 }
+
+func GetReqID(ctx context.Context) string {
+	return ctx.Value(types.ContextKeyReqID).(string)
+}

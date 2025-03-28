@@ -5,9 +5,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"time"
 	pb "web-example/audit/generated"
 	"web-example/log"
+	"web-example/types"
+	"web-example/util"
 )
 
 type Client struct {
@@ -42,6 +45,9 @@ func NewClient() *Client {
 func (c *Client) LogOrder(ctx context.Context, message *pb.CreateOrderRequest) {
 	logger := log.Logger(ctx)
 	logger.Infof("Sending order to audit: %v", message)
+
+	md := metadata.Pairs(string(types.ContextKeyReqID), util.GetReqID(ctx))
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	response, err := c.grpcClient.LogOrder(ctx, message)
 	if err != nil {

@@ -20,7 +20,7 @@ func init() {
 
 func BaseLogger() *logrus.Entry {
 	return baseLogger.WithFields(logrus.Fields{
-		"request-id": "application",
+		string(types.ContextKeyReqID): "application",
 	})
 }
 
@@ -28,8 +28,10 @@ func Logger(ctx context.Context) *logrus.Entry {
 	if ctx == nil {
 		return BaseLogger()
 	}
-	if logger, ok := ctx.Value(types.LogKey).(*logrus.Entry); ok {
-		return logger
+	if requestId := ctx.Value(types.ContextKeyReqID); requestId != nil {
+		return BaseLogger().WithFields(logrus.Fields{
+			string(types.ContextKeyReqID): requestId,
+		})
 	}
 	return BaseLogger()
 }
