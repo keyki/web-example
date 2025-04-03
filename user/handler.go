@@ -1,7 +1,6 @@
 package user
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"web-example/log"
@@ -33,8 +32,8 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var userRequest Request
-	if err := json.NewDecoder(r.Body).Decode(&userRequest); err != nil {
+	userRequest, err := util.DecodeJSON[Request](r)
+	if err != nil {
 		util.WriteError(w, http.StatusBadRequest, err)
 		return
 	}

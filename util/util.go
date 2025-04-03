@@ -11,6 +11,14 @@ import (
 	"web-example/types"
 )
 
+func DecodeJSON[T any](r *http.Request) (T, error) {
+	var result T
+	if err := json.NewDecoder(r.Body).Decode(&result); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func WriteJSON(w http.ResponseWriter, status int, v any) {
 	code := 200
 	if status != 0 {

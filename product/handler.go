@@ -1,7 +1,6 @@
 package product
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"web-example/log"
@@ -25,8 +24,8 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	var productRequest Request
-	if err := json.NewDecoder(r.Body).Decode(&productRequest); err != nil {
+	productRequest, err := util.DecodeJSON[Request](r)
+	if err != nil {
 		util.WriteError(w, http.StatusBadRequest, err)
 		return
 	}

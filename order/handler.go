@@ -1,9 +1,7 @@
 package order
 
 import (
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 	"web-example/audit"
@@ -51,18 +49,13 @@ func (h *Handler) ListAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
-	bodyBytes, err := io.ReadAll(r.Body)
+	req, err := util.DecodeJSON[Request](r)
 	if err != nil {
-		log.Logger(r.Context()).Infof("Error reading body: %s", err)
-		util.WriteError(w, http.StatusInternalServerError, util.NewInternalError())
-	}
-
-	var req Request
-	if err = json.Unmarshal(bodyBytes, &req); err != nil {
 		log.Logger(r.Context()).Infof("Error unmarshalling request: %v", err)
 		util.WriteError(w, http.StatusBadRequest, errors.New("Invalid request"))
 		return
 	}
+
 	log.Logger(r.Context()).Infof("Received order request: %+v", req)
 
 	req.username = util.GetUsername(r)
