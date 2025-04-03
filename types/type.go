@@ -13,6 +13,8 @@ var (
 const (
 	ContextKeyReqID     ContextKey = "request-id"
 	HTTPHeaderRequestID            = "X-Request-ID"
+	AuditServerPort                = 8071
+	WebServerPort                  = 8070
 )
 
 type ContextKey string

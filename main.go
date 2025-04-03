@@ -12,6 +12,7 @@ import (
 	"web-example/log"
 	"web-example/order"
 	"web-example/product"
+	"web-example/types"
 	"web-example/user"
 	"web-example/web"
 )
@@ -38,8 +39,8 @@ func main() {
 		log.BaseLogger().Fatalf("Failed to migrate schema: %v", err)
 	}
 
-	go startAuditServer(8081)
-	web.NewApiServer(8080, db).Listen()
+	go startAuditServer(types.AuditServerPort)
+	web.NewApiServer(types.WebServerPort, db).Listen()
 }
 
 func startAuditServer(port int) {

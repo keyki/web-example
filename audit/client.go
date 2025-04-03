@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"strconv"
 	"time"
 	pb "web-example/audit/generated"
 	"web-example/log"
@@ -19,7 +20,7 @@ type Client struct {
 
 func NewClient() *Client {
 	logger := log.BaseLogger()
-	conn, err := grpc.Dial("localhost:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial("localhost:"+strconv.Itoa(types.AuditServerPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Fatalf("Failed to create gRPC client: %v", err)
 	}

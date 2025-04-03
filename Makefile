@@ -19,13 +19,13 @@ tidy:
 	go mod tidy
 
 grpc-info:
-	grpcurl -plaintext localhost:8081 list
+	grpcurl -plaintext localhost:8071 list
 	@echo
-	grpcurl -plaintext localhost:8081 describe audit.Audit
+	grpcurl -plaintext localhost:8071 describe audit.Audit
 	@echo
-	grpcurl -plaintext localhost:8081 describe .audit.CreateOrderRequest
+	grpcurl -plaintext localhost:8071 describe .audit.CreateOrderRequest
 	@echo
-	grpcurl -plaintext localhost:8081 describe .audit.Order
+	grpcurl -plaintext localhost:8071 describe .audit.Order
 
 .DEFAULT_GOAL := build
 
